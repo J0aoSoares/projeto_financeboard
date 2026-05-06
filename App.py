@@ -22,6 +22,7 @@ def adicionar_transacao():
         tipo=dados["tipo"],
         data=dados["data"]
         )
+    return jsonify({"ok": True})        
 
 @app.route('/api/transacoes/<int:id>', methods=['DELETE'])
 def excluir_transacao(id):
@@ -40,7 +41,7 @@ def atualizar_transacao(id):
     )
     return jsonify({"ok": True})
 
-@app.route("api/resumo", methods=["GET"])
+@app.route("/api/resumo", methods=["GET"])
 def resumo():
     mes = request.args.get("mes")
     dados = database.resumo_mensal(mes)

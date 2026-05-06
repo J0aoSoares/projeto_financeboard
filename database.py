@@ -33,11 +33,11 @@ def inicializar_db():
     conn.close()
     print("Banco de dados inicializado com sucesso.")
 
-def inserir_transacao(descricao, valor, tipo, categoria, data):
+def inserir_transacao(descricao, valor, tipo, data):
     conn = conectar()
     conn.execute(
-        "INSERT INTO transacoes (descricao, valor, tipo, categoria, data) VALUES (?, ?, ?, ?, ?)",
-        (descricao, valor, tipo, categoria, data)
+        "INSERT INTO transacoes (descricao, valor, tipo, data) VALUES (?, ?, ?, ?, ?)",
+        (descricao, valor, tipo, data)
     )
     conn.commit()
     conn.close()
