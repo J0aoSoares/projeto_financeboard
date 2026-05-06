@@ -62,5 +62,6 @@ def resumo_mensal(mes=None):
         WHERE data LIKE ?
     """, filtro)
     row = dict(cursor.fetchone())
+    row["saldo"] = row["total_entradas"] - row["total_saidas"]
     conn.close()
     return row

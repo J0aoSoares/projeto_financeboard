@@ -10,7 +10,7 @@ def index():
 @app.route('/api/transacoes', methods=["GET"])
 def listar_transacoes():
     mes = request.args.get('mes')
-    transacoes = database.get_transacoes(mes)
+    transacoes = database.buscar_transacoes(mes)
     return jsonify(transacoes)
 
 @app.route('/api/transacoes', methods=["POST"])
@@ -26,19 +26,7 @@ def adicionar_transacao():
 
 @app.route('/api/transacoes/<int:id>', methods=['DELETE'])
 def excluir_transacao(id):
-    database.excluir_transacao(id)
-    return jsonify({"ok": True})
-
-@app.route('/api/transacoes/<int:id>', methods=['PUT'])
-def atualizar_transacao(id):
-    dados = request.json
-    database.atualizar_transacao(
-        id=id,
-        descricao=dados["descricao"],
-        valor=float(dados["valor"]),
-        tipo=dados["tipo"],
-        data=dados["data"]
-    )
+    database.deletar_transacao(id)
     return jsonify({"ok": True})
 
 @app.route("/api/resumo", methods=["GET"])
