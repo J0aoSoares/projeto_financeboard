@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💰 Financeiro PRO
+# Financeboard
 
 Dashboard web para controle financeiro empresarial — registre entradas e saídas e acompanhe o saldo mensal em tempo real.
 
@@ -66,7 +66,7 @@ Acesse **http://localhost:5000**
 ## Estrutura
 
 ```
-financeiro-pro/
+financeboard/
 ├── app.py              # Rotas e endpoints da API
 ├── database.py         # Queries SQL
 ├── static/
