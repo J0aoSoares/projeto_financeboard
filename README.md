@@ -44,8 +44,8 @@ Projeto construído com foco em aprendizado — cada camada da aplicação (rota
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/SEU_USUARIO/financeiro-pro.git
-cd financeiro-pro
+git clone https://github.com/J0aoSoares/projeto_financeboard.git
+cd projeto_financeboard
 
 # 2. Crie e ative o ambiente virtual
 python -m venv venv

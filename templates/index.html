@@ -3,65 +3,125 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Financeiro</title>
+  <title>FinanceBoard</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 
-<header>
-  <h1>FinanceBoard</h1>
-  <input type="month" id="mes-select">
-</header>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">FBoard</div>
+    <ul class="sidebar-menu">
+      <li class="menu-item active" onclick="setTela('transacoes')">
+        <span class="menu-label">Transações</span>
+      </li>
+      <li class="menu-item disabled">
+        <span class="menu-label">Medição</span>
+        <span class="menu-badge">em breve</span>
+      </li>
+      <li class="menu-item disabled">
+        <span class="menu-label">Orçamento</span>
+        <span class="menu-badge">em breve</span>
+      </li>
+    </ul>
+  </nav>
+  <div class="content">
 
-<div class="resumo">
-  <div class="card entradas">
-    <label>Entradas</label>
-    <div class="valor" id="total-entradas">R$ 0,00</div>
-  </div>
-  <div class="card saidas">
-    <label>Saídas</label>
-    <div class="valor" id="total-saidas">R$ 0,00</div>
-  </div>
-  <div class="card saldo">
-    <label>Saldo</label>
-    <div class="valor" id="saldo">R$ 0,00</div>
-  </div>
-</div>
+    <header>
+      <h1>FinanceBoard</h1>
+      <input type="month" id="mes-select">
+    </header>
+    <div id="tela-transacoes">
 
-<div class="main">
+      <div class="resumo">
+        <div class="card entradas">
+          <label>Entradas</label>
+          <div class="valor" id="total-entradas">R$ 0,00</div>
+        </div>
+        <div class="card saidas">
+          <label>Saídas</label>
+          <div class="valor" id="total-saidas">R$ 0,00</div>
+        </div>
+        <div class="card saldo">
+          <label>Saldo</label>
+          <div class="valor" id="saldo">R$ 0,00</div>
+        </div>
+      </div>
 
-  <div class="lista-panel">
-    <h2>Transações</h2>
-    <div id="lista"></div>
-  </div>
+      <div class="main">
 
-  <div class="form-panel">
-    <h2>Nova transação</h2>
+        <div class="lista-panel">
+          <h2>Transações</h2>
+          <div id="lista"></div>
+        </div>
 
-    <div class="tipo-toggle">
-      <button class="tipo-btn active-entrada" id="btn-entrada" onclick="setTipo('entrada')">+ Entrada</button>
-      <button class="tipo-btn" id="btn-saida" onclick="setTipo('saida')">− Saída</button>
+        <div class="side-panel">
+
+          <div class="form-panel">
+            <h2>Nova transação</h2>
+            <div class="tipo-toggle">
+              <button class="tipo-btn active-entrada" id="btn-entrada" onclick="setTipo('entrada')">+ Entrada</button>
+              <button class="tipo-btn" id="btn-saida" onclick="setTipo('saida')">− Saída</button>
+            </div>
+            <div class="form-group">
+              <label>Descrição</label>
+              <input type="text" id="f-desc" placeholder="Ex: Venda produto X">
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" id="f-valor" placeholder="0,00" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+              <label>Data</label>
+              <input type="date" id="f-data">
+            </div>
+            <button class="btn-add" onclick="adicionarTransacao()">ADICIONAR</button>
+          </div>
+
+          <div class="form-panel">
+            <h2>CSV</h2>
+            <div class="form-group">
+              <label>Exportar — de</label>
+              <input type="month" id="exp-de">
+            </div>
+            <div class="form-group">
+              <label>Exportar — até</label>
+              <input type="month" id="exp-ate">
+            </div>
+            <button class="btn-csv btn-export" onclick="exportarCSV()">↓ EXPORTAR CSV</button>
+            <div class="csv-divider"></div>
+            <div class="form-group">
+              <label>Importar arquivo CSV</label>
+              <input type="file" id="imp-arquivo" accept=".csv">
+            </div>
+            <button class="btn-csv btn-import" onclick="importarCSV()">↑ IMPORTAR CSV</button>
+            <div id="imp-resultado"></div>
+            <div class="csv-divider"></div>
+            <button class="btn-csv btn-template" onclick="baixarTemplate()">⬇ BAIXAR TEMPLATE</button>
+          </div>
+
+        </div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>Descrição</label>
-      <input type="text" id="f-desc" placeholder="Ex: Venda produto X">
+    <!--placeholder-->
+    <div id="tela-medicao" class="tela-placeholder" style="display:none">
+      <div class="placeholder-box">
+        <div class="placeholder-title">Medição</div>
+        <div class="placeholder-sub">Esta tela está em desenvolvimento</div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>Valor (R$)</label>
-      <input type="number" id="f-valor" placeholder="0,00" step="0.01" min="0">
+    <!--placeholder-->
+    <div id="tela-orcamento" class="tela-placeholder" style="display:none">
+      <div class="placeholder-box">
+        <div class="placeholder-title">Orçamento</div>
+        <div class="placeholder-sub">Esta tela está em desenvolvimento</div>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label>Data</label>
-      <input type="date" id="f-data">
-    </div>
-
-    <button class="btn-add" onclick="adicionarTransacao()">ADICIONAR</button>
   </div>
-
 </div>
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>

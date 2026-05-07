@@ -5,6 +5,8 @@ document.getElementById('f-data').value = new Date().toISOString().split('T')[0]
 const hoje = new Date();
 const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}`;
 document.getElementById('mes-select').value = mesAtual;
+document.getElementById('exp-de').value  = mesAtual;
+document.getElementById('exp-ate').value = mesAtual;
 document.getElementById('mes-select').addEventListener('change', carregarDados);
 
 function setTipo(tipo) {
@@ -79,4 +81,47 @@ async function excluir(id) {
   carregarDados();
 }
 
+function exportarCSV() {
+  const de  = document.getElementById('exp-de').value;
+  const ate = document.getElementById('exp-ate').value;
+  if (!de || !ate) { alert('Selecione o período de exportação'); return; }
+  window.location.href = `/api/exportar?de=${de}&ate=${ate}`;
+}
+
+async function importarCSV() {
+  const arquivo = document.getElementById('imp-arquivo').files[0];
+  if (!arquivo) { alert('Selecione um arquivo CSV'); return; }
+
+  const form = new FormData();
+  form.append('arquivo', arquivo);
+
+  const res = await fetch('/api/importar', { method: 'POST', body: form });
+  const dados = await res.json();
+
+  const el = document.getElementById('imp-resultado');
+  if (dados.erros.length === 0) {
+    el.innerHTML = `<div class="imp-ok">✓ ${dados.inseridos} transações importadas</div>`;
+  } else {
+    el.innerHTML = `<div class="imp-ok">✓ ${dados.inseridos} importadas</div>
+                    <div class="imp-err">${dados.erros.join('<br>')}</div>`;
+  }
+
+  document.getElementById('imp-arquivo').value = '';
+  carregarDados();
+}
+
+function baixarTemplate() {
+  window.location.href = '/api/template';
+}
+
 carregarDados();
+
+function setTela(tela) {
+  const telas = ['transacoes', 'medicao', 'orcamento'];
+  telas.forEach(t => {
+    document.getElementById(`tela-${t}`).style.display = t === tela ? '' : 'none';
+  });
+  document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+  const idx = telas.indexOf(tela);
+  document.querySelectorAll('.menu-item')[idx].classList.add('active');
+}

@@ -65,3 +65,28 @@ def resumo_mensal(mes=None):
     row["saldo"] = row["total_entradas"] - row["total_saidas"]
     conn.close()
     return row
+def buscar_periodo(de=None, ate=None):
+    conn = conectar()
+    if de and ate:
+        cursor = conn.execute("""
+            SELECT * FROM transacoes
+            WHERE data >= ? AND data <= ?
+            ORDER BY data ASC
+        """, (f"{de}-01", f"{ate}-31"))
+    elif de:
+        cursor = conn.execute("""
+            SELECT * FROM transacoes
+            WHERE data >= ?
+            ORDER BY data ASC
+        """, (f"{de}-01",))
+    elif ate:
+        cursor = conn.execute("""
+            SELECT * FROM transacoes
+            WHERE data <= ?
+            ORDER BY data ASC
+        """, (f"{ate}-31",))
+    else:
+        cursor = conn.execute("SELECT * FROM transacoes ORDER BY data ASC")
+    rows = [dict(row) for row in cursor]
+    conn.close()
+    return rows
