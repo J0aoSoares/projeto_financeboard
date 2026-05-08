@@ -1,101 +1,132 @@
-from flask import Flask, render_template, request, jsonify, Response
+import os
+from flask import Flask, render_template, request, jsonify, Response, send_from_directory
 import database
 import csv
 import io
 
 app = Flask(__name__)
 
+UPLOAD_FOLDER = "uploads/invoices"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/api/transacoes', methods=["GET"])
-def listar_transacoes():
-    mes = request.args.get('mes')
-    transacoes = database.buscar_transacoes(mes)
-    return jsonify(transacoes)
+@app.route('/api/transactions', methods=["GET"])
+def list_transactions():
+    month = request.args.get('month')
+    return jsonify(database.get_transactions(month))
 
-@app.route('/api/transacoes', methods=["POST"])
-def adicionar_transacao():
-    dados = request.json
-    database.inserir_transacao(
-        descricao=dados["descricao"],
-        valor=float(dados["valor"]),
-        tipo=dados["tipo"],
-        data=dados["data"]
+@app.route('/api/transactions', methods=["POST"])
+def add_transaction():
+    data = request.json
+    database.insert_transaction(
+        description=data["description"],
+        amount=float(data["amount"]),
+        kind=data["kind"],
+        date=data["date"]
     )
     return jsonify({"ok": True})
 
-@app.route('/api/transacoes/<int:id>', methods=['DELETE'])
-def excluir_transacao(id):
-    database.deletar_transacao(id)
+@app.route('/api/transactions/<int:id>', methods=['DELETE'])
+def delete_transaction(id):
+    database.remove_transaction(id)
     return jsonify({"ok": True})
 
-@app.route("/api/resumo", methods=["GET"])
-def resumo():
-    mes = request.args.get("mes")
-    dados = database.resumo_mensal(mes)
-    return jsonify(dados)
+@app.route('/api/summary', methods=["GET"])
+def summary():
+    month = request.args.get('month')
+    return jsonify(database.monthly_summary(month))
 
-@app.route("/api/exportar", methods=["GET"])
-def exportar():
-    de  = request.args.get("de")
-    ate = request.args.get("ate")
-    transacoes = database.buscar_periodo(de, ate)
+@app.route('/api/export', methods=["GET"])
+def export_csv():
+    from_month = request.args.get('from')
+    to_month   = request.args.get('to')
+    rows = database.get_transactions_by_period(from_month, to_month)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["description", "amount", "kind", "date"])
+    for r in rows:
+        writer.writerow([r["description"], r["amount"], r["kind"], r["date"]])
+    filename = f"financeboard_{from_month or 'start'}_{to_month or 'end'}.csv"
+    return Response(output.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-    saida = io.StringIO()
-    writer = csv.writer(saida)
-    writer.writerow(["descricao", "valor", "tipo", "data"])
-    for t in transacoes:
-        writer.writerow([t["descricao"], t["valor"], t["tipo"], t["data"]])
-
-    nome = f"financeboard_{de or 'inicio'}_{ate or 'fim'}.csv"
-    return Response(
-        saida.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={nome}"}
-    )
-
-@app.route("/api/importar", methods=["POST"])
-def importar():
-    arquivo = request.files.get("arquivo")
-    if not arquivo:
-        return jsonify({"erro": "Nenhum arquivo enviado"}), 400
-
-    conteudo = arquivo.read().decode("utf-8")
-    reader = csv.DictReader(io.StringIO(conteudo))
-
-    inseridos = 0
-    erros = []
-    for i, linha in enumerate(reader, start=2):
+@app.route('/api/import', methods=["POST"])
+def import_csv():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "No file sent"}), 400
+    content = file.read().decode("utf-8")
+    reader  = csv.DictReader(io.StringIO(content))
+    inserted, errors = 0, []
+    for i, row in enumerate(reader, start=2):
         try:
-            database.inserir_transacao(
-                descricao=linha["descricao"],
-                valor=float(linha["valor"]),
-                tipo=linha["tipo"],
-                data=linha["data"]
-            )
-            inseridos += 1
+            database.insert_transaction(row["description"], float(row["amount"]), row["kind"], row["date"])
+            inserted += 1
         except Exception as e:
-            erros.append(f"Linha {i}: {str(e)}")
+            errors.append(f"Linha {i}: {str(e)}")
+    return jsonify({"inserted": inserted, "errors": errors})
 
-    return jsonify({"inseridos": inseridos, "erros": erros})
+@app.route('/api/template', methods=["GET"])
+def csv_template():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["description", "amount", "kind", "date"])
+    writer.writerow(["Exemplo entrada", "1500.00", "income", "2026-05-01"])
+    writer.writerow(["Exemplo saida",   "300.00",  "expense", "2026-05-02"])
+    return Response(output.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=template_financeboard.csv"})
 
-@app.route("/api/template", methods=["GET"])
-def template_csv():
-    saida = io.StringIO()
-    writer = csv.writer(saida)
-    writer.writerow(["descricao", "valor", "tipo", "data"])
-    writer.writerow(["Exemplo entrada", "1500.00", "entrada", "2026-05-01"])
-    writer.writerow(["Exemplo saida",   "300.00",  "saida",   "2026-05-02"])
+# ── INVOICES ──
 
-    return Response(
-        saida.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=template_financeboard.csv"}
+@app.route('/api/invoices', methods=["GET"])
+def list_invoices():
+    month = request.args.get('month')
+    return jsonify(database.get_invoices(month))
+
+@app.route('/api/invoices', methods=["POST"])
+def add_invoice():
+    file_path = None
+    pdf = request.files.get("file")
+    if pdf and pdf.filename:
+        path = os.path.join(UPLOAD_FOLDER, pdf.filename)
+        pdf.save(path)
+        file_path = path
+    new_id = database.insert_invoice(
+        number=request.form["number"],
+        supplier=request.form["supplier"],
+        description=request.form["description"],
+        amount=float(request.form["amount"]),
+        issue_date=request.form["issue_date"],
+        due_date=request.form["due_date"],
+        file_path=file_path
     )
+    return jsonify({"ok": True, "id": new_id})
+
+@app.route('/api/invoices/<int:id>/pay', methods=["POST"])
+def pay_invoice(id):
+    data = request.json
+    transaction_id = database.mark_invoice_paid(id, data["payment_date"])
+    return jsonify({"ok": True, "transaction_id": transaction_id})
+
+@app.route('/api/invoices/<int:id>', methods=["DELETE"])
+def delete_invoice(id):
+    file_path = database.remove_invoice(id)
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)
+    return jsonify({"ok": True})
+
+@app.route('/api/invoices/<int:id>/file', methods=["GET"])
+def download_invoice(id):
+    invoice = database.get_invoice(id)
+    if not invoice or not invoice["file_path"]:
+        return jsonify({"error": "File not found"}), 404
+    return send_from_directory(os.path.abspath(UPLOAD_FOLDER),
+                               os.path.basename(invoice["file_path"]))
 
 if __name__ == "__main__":
-    database.inicializar_db()
-    print("\n Servidor rodando em http://localhost:5000")
+    database.init_db()
+    print("\n Server running at http://localhost:5000")
     app.run(debug=True)

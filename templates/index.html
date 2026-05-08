@@ -10,11 +10,15 @@
 <body>
 
 <div class="layout">
+
   <nav class="sidebar">
     <div class="sidebar-logo">FBoard</div>
     <ul class="sidebar-menu">
-      <li class="menu-item active" onclick="setTela('transacoes')">
+      <li class="menu-item active" onclick="setScreen('transactions')">
         <span class="menu-label">Transações</span>
+      </li>
+      <li class="menu-item" onclick="setScreen('invoices')">
+        <span class="menu-label">Notas Fiscais</span>
       </li>
       <li class="menu-item disabled">
         <span class="menu-label">Medição</span>
@@ -26,43 +30,41 @@
       </li>
     </ul>
   </nav>
+
   <div class="content">
 
     <header>
       <h1>FinanceBoard</h1>
-      <input type="month" id="mes-select">
+      <input type="month" id="month-select">
     </header>
-    <div id="tela-transacoes">
 
+    <!-- TRANSAÇÕES -->
+    <div id="screen-transactions">
       <div class="resumo">
         <div class="card entradas">
           <label>Entradas</label>
-          <div class="valor" id="total-entradas">R$ 0,00</div>
+          <div class="valor" id="total-income">R$ 0,00</div>
         </div>
         <div class="card saidas">
           <label>Saídas</label>
-          <div class="valor" id="total-saidas">R$ 0,00</div>
+          <div class="valor" id="total-expenses">R$ 0,00</div>
         </div>
         <div class="card saldo">
           <label>Saldo</label>
-          <div class="valor" id="saldo">R$ 0,00</div>
+          <div class="valor" id="balance">R$ 0,00</div>
         </div>
       </div>
-
       <div class="main">
-
         <div class="lista-panel">
           <h2>Transações</h2>
-          <div id="lista"></div>
+          <div id="transaction-list"></div>
         </div>
-
         <div class="side-panel">
-
           <div class="form-panel">
             <h2>Nova transação</h2>
             <div class="tipo-toggle">
-              <button class="tipo-btn active-entrada" id="btn-entrada" onclick="setTipo('entrada')">+ Entrada</button>
-              <button class="tipo-btn" id="btn-saida" onclick="setTipo('saida')">− Saída</button>
+              <button class="tipo-btn active-entrada" id="btn-income"  onclick="setType('income')">+ Entrada</button>
+              <button class="tipo-btn"                id="btn-expense" onclick="setType('expense')">− Saída</button>
             </div>
             <div class="form-group">
               <label>Descrição</label>
@@ -70,57 +72,129 @@
             </div>
             <div class="form-group">
               <label>Valor (R$)</label>
-              <input type="number" id="f-valor" placeholder="0,00" step="0.01" min="0">
+              <input type="number" id="f-amount" placeholder="0,00" step="0.01" min="0">
             </div>
             <div class="form-group">
               <label>Data</label>
-              <input type="date" id="f-data">
+              <input type="date" id="f-date">
             </div>
-            <button class="btn-add" onclick="adicionarTransacao()">ADICIONAR</button>
+            <button class="btn-add" onclick="addTransaction()">ADICIONAR</button>
           </div>
-
           <div class="form-panel">
             <h2>CSV</h2>
             <div class="form-group">
               <label>Exportar — de</label>
-              <input type="month" id="exp-de">
+              <input type="month" id="export-from">
             </div>
             <div class="form-group">
               <label>Exportar — até</label>
-              <input type="month" id="exp-ate">
+              <input type="month" id="export-to">
             </div>
-            <button class="btn-csv btn-export" onclick="exportarCSV()">↓ EXPORTAR CSV</button>
+            <button class="btn-csv btn-export" onclick="exportCSV()">↓ EXPORTAR CSV</button>
             <div class="csv-divider"></div>
             <div class="form-group">
               <label>Importar arquivo CSV</label>
-              <input type="file" id="imp-arquivo" accept=".csv">
+              <input type="file" id="import-file" accept=".csv">
             </div>
-            <button class="btn-csv btn-import" onclick="importarCSV()">↑ IMPORTAR CSV</button>
-            <div id="imp-resultado"></div>
+            <button class="btn-csv btn-import" onclick="importCSV()">↑ IMPORTAR CSV</button>
+            <div id="import-result"></div>
             <div class="csv-divider"></div>
-            <button class="btn-csv btn-template" onclick="baixarTemplate()">⬇ BAIXAR TEMPLATE</button>
+            <button class="btn-csv btn-template" onclick="downloadTemplate()">⬇ BAIXAR TEMPLATE</button>
           </div>
-
         </div>
       </div>
     </div>
 
-    <!--placeholder-->
-    <div id="tela-medicao" class="tela-placeholder" style="display:none">
+    <!-- NOTAS FISCAIS -->
+    <div id="screen-invoices" style="display:none">
+      <div class="resumo">
+        <div class="card saldo">
+          <label>Total do mês</label>
+          <div class="valor" id="inv-total">R$ 0,00</div>
+        </div>
+        <div class="card saidas">
+          <label>Pendentes</label>
+          <div class="valor" id="inv-pending">0</div>
+        </div>
+        <div class="card entradas">
+          <label>Pagas</label>
+          <div class="valor" id="inv-paid">0</div>
+        </div>
+      </div>
+      <div class="main">
+        <div class="lista-panel">
+          <h2>Notas Fiscais</h2>
+          <div id="invoice-list"></div>
+        </div>
+        <div class="side-panel">
+          <div class="form-panel">
+            <h2>Nova nota fiscal</h2>
+            <div class="form-group">
+              <label>Número da nota</label>
+              <input type="text" id="inv-number" placeholder="Ex: NF-001234">
+            </div>
+            <div class="form-group">
+              <label>Fornecedor</label>
+              <input type="text" id="inv-supplier" placeholder="Ex: Empresa LTDA">
+            </div>
+            <div class="form-group">
+              <label>Descrição</label>
+              <input type="text" id="inv-description" placeholder="Ex: Compra de materiais">
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" id="inv-amount" placeholder="0,00" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+              <label>Data de emissão</label>
+              <input type="date" id="inv-issue-date">
+            </div>
+            <div class="form-group">
+              <label>Data de vencimento</label>
+              <input type="date" id="inv-due-date">
+            </div>
+            <div class="form-group">
+              <label>PDF da nota (opcional)</label>
+              <input type="file" id="inv-file" accept=".pdf">
+            </div>
+            <button class="btn-add" onclick="addInvoice()">CADASTRAR NOTA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDIÇÃO -->
+    <div id="screen-measurement" class="tela-placeholder" style="display:none">
       <div class="placeholder-box">
         <div class="placeholder-title">Medição</div>
         <div class="placeholder-sub">Esta tela está em desenvolvimento</div>
       </div>
     </div>
 
-    <!--placeholder-->
-    <div id="tela-orcamento" class="tela-placeholder" style="display:none">
+    <!-- ORÇAMENTO -->
+    <div id="screen-budget" class="tela-placeholder" style="display:none">
       <div class="placeholder-box">
         <div class="placeholder-title">Orçamento</div>
         <div class="placeholder-sub">Esta tela está em desenvolvimento</div>
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL PAGAMENTO -->
+<div id="pay-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>Confirmar pagamento</h3>
+    <p id="modal-desc"></p>
+    <div class="form-group" style="margin-top:16px">
+      <label>Data do pagamento</label>
+      <input type="date" id="modal-date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-csv btn-template" onclick="closeModal()">CANCELAR</button>
+      <button class="btn-add" style="width:auto;padding:10px 24px" onclick="confirmPayment()">CONFIRMAR</button>
+    </div>
   </div>
 </div>
 
