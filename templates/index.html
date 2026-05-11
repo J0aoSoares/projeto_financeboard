@@ -182,6 +182,71 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR NOTA FISCAL -->
+<div id="edit-invoice-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="width:420px">
+    <h3>Editar nota fiscal</h3>
+    <div class="form-group" style="margin-top:16px">
+      <label>Número da nota</label>
+      <input type="text" id="einv-number">
+    </div>
+    <div class="form-group">
+      <label>Fornecedor</label>
+      <input type="text" id="einv-supplier">
+    </div>
+    <div class="form-group">
+      <label>Descrição</label>
+      <input type="text" id="einv-description">
+    </div>
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" id="einv-amount" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label>Data de emissão</label>
+      <input type="date" id="einv-issue-date">
+    </div>
+    <div class="form-group">
+      <label>Data de vencimento</label>
+      <input type="date" id="einv-due-date">
+    </div>
+    <div id="einv-paid-notice" style="display:none;font-size:0.78rem;color:#ffc107;margin-bottom:12px">
+      ⚠ Nota paga — a transação vinculada também será atualizada.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-csv btn-template" onclick="closeEditInvoiceModal()">CANCELAR</button>
+      <button class="btn-add" style="width:auto;padding:10px 24px" onclick="confirmEditInvoice()">SALVAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TRANSAÇÃO -->
+<div id="edit-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3>Editar transação</h3>
+    <div class="tipo-toggle" style="margin-top:16px">
+      <button class="tipo-btn" id="edit-btn-income"  onclick="setEditType('income')">+ Entrada</button>
+      <button class="tipo-btn" id="edit-btn-expense" onclick="setEditType('expense')">− Saída</button>
+    </div>
+    <div class="form-group" style="margin-top:4px">
+      <label>Descrição</label>
+      <input type="text" id="edit-desc">
+    </div>
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" id="edit-amount" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label>Data</label>
+      <input type="date" id="edit-date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-csv btn-template" onclick="closeEditModal()">CANCELAR</button>
+      <button class="btn-add" style="width:auto;padding:10px 24px" onclick="confirmEdit()">SALVAR</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PAGAMENTO -->
 <div id="pay-modal" class="modal-overlay" style="display:none">
   <div class="modal-box">

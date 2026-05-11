@@ -63,6 +63,15 @@ def get_transactions(month=None):
     conn.close()
     return rows
 
+def update_transaction(id, description, amount, kind, date):
+    conn = connect()
+    conn.execute(
+        "UPDATE transactions SET description=?, amount=?, kind=?, date=? WHERE id=?",
+        (description, amount, kind, date, id)
+    )
+    conn.commit()
+    conn.close()
+
 def remove_transaction(id):
     conn = connect()
     conn.execute("DELETE FROM transactions WHERE id = ?", (id,))
@@ -159,6 +168,22 @@ def mark_invoice_paid(id, payment_date):
     conn.commit()
     conn.close()
     return transaction_id
+
+def update_invoice(id, number, supplier, description, amount, issue_date, due_date):
+    conn = connect()
+    invoice = dict(conn.execute("SELECT * FROM invoices WHERE id = ?", (id,)).fetchone())
+    conn.execute("""
+        UPDATE invoices
+        SET number=?, supplier=?, description=?, amount=?, issue_date=?, due_date=?
+        WHERE id=?
+    """, (number, supplier, description, amount, issue_date, due_date, id))
+    if invoice["transaction_id"]:
+        conn.execute(
+            "UPDATE transactions SET description=?, amount=? WHERE id=?",
+            (f"NF {number} — {supplier}", amount, invoice["transaction_id"])
+        )
+    conn.commit()
+    conn.close()
 
 def remove_invoice(id):
     conn = connect()

@@ -29,6 +29,18 @@ def add_transaction():
     )
     return jsonify({"ok": True})
 
+@app.route('/api/transactions/<int:id>', methods=['PUT'])
+def update_transaction(id):
+    data = request.json
+    database.update_transaction(
+        id=id,
+        description=data["description"],
+        amount=float(data["amount"]),
+        kind=data["kind"],
+        date=data["date"]
+    )
+    return jsonify({"ok": True})
+
 @app.route('/api/transactions/<int:id>', methods=['DELETE'])
 def delete_transaction(id):
     database.remove_transaction(id)
@@ -104,6 +116,20 @@ def add_invoice():
         file_path=file_path
     )
     return jsonify({"ok": True, "id": new_id})
+
+@app.route('/api/invoices/<int:id>', methods=['PUT'])
+def update_invoice(id):
+    data = request.json
+    database.update_invoice(
+        id=id,
+        number=data["number"],
+        supplier=data["supplier"],
+        description=data["description"],
+        amount=float(data["amount"]),
+        issue_date=data["issue_date"],
+        due_date=data["due_date"]
+    )
+    return jsonify({"ok": True})
 
 @app.route('/api/invoices/<int:id>/pay', methods=["POST"])
 def pay_invoice(id):

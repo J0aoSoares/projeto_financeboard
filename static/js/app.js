@@ -1,5 +1,10 @@
 let selectedType = 'income';
 let invoiceToPay = null;
+let transactionToEdit = null;
+let editType = 'income';
+let loadedTransactions = [];
+let invoiceToEdit = null;
+let loadedInvoices = [];
 
 // ── INIT ──
 document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
@@ -62,6 +67,8 @@ async function loadTransactions() {
   document.getElementById('total-expenses').textContent = fmt(summary.total_expenses);
   document.getElementById('balance').textContent        = fmt(summary.balance);
 
+  loadedTransactions = transactions;
+
   const list = document.getElementById('transaction-list');
   if (transactions.length === 0) {
     list.innerHTML = '<div class="vazio">NENHUMA TRANSAÇÃO NESTE MÊS</div>';
@@ -81,7 +88,10 @@ async function loadTransactions() {
         <span class="valor-tx ${t.kind === 'income' ? 'entrada' : 'saida'}">
           ${t.kind === 'income' ? '+' : '−'} ${fmt(t.amount)}
         </span>
-        ${!t.invoice_id ? `<button class="btn-del" onclick="deleteTransaction(${t.id})">✕</button>` : ''}
+        ${!t.invoice_id ? `
+          <button class="btn-icon" onclick="openEditModal(${t.id})" title="Editar">✎</button>
+          <button class="btn-del"  onclick="deleteTransaction(${t.id})">✕</button>
+        ` : ''}
       </div>
     </div>
   `).join('');
@@ -105,6 +115,43 @@ async function addTransaction() {
 async function deleteTransaction(id) {
   if (!confirm('Excluir esta transação?')) return;
   await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+  loadTransactions();
+}
+
+// ── EDIT MODAL ──
+function setEditType(type) {
+  editType = type;
+  document.getElementById('edit-btn-income').className  = 'tipo-btn' + (type === 'income'  ? ' active-entrada' : '');
+  document.getElementById('edit-btn-expense').className = 'tipo-btn' + (type === 'expense' ? ' active-saida'   : '');
+}
+
+function openEditModal(id) {
+  const t = loadedTransactions.find(tx => tx.id === id);
+  if (!t) return;
+  transactionToEdit = id;
+  document.getElementById('edit-desc').value   = t.description;
+  document.getElementById('edit-amount').value  = t.amount;
+  document.getElementById('edit-date').value    = t.date;
+  setEditType(t.kind);
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+  transactionToEdit = null;
+}
+
+async function confirmEdit() {
+  const description = document.getElementById('edit-desc').value.trim();
+  const amount      = parseFloat(document.getElementById('edit-amount').value);
+  const date        = document.getElementById('edit-date').value;
+  if (!description || !amount || !date) { alert('Preencha todos os campos!'); return; }
+  await fetch(`/api/transactions/${transactionToEdit}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description, amount, kind: editType, date })
+  });
+  closeEditModal();
   loadTransactions();
 }
 
@@ -133,6 +180,46 @@ async function importCSV() {
 
 function downloadTemplate() { window.location.href = '/api/template'; }
 
+// ── EDIT INVOICE MODAL ──
+function openEditInvoiceModal(id) {
+  const inv = loadedInvoices.find(i => i.id === id);
+  if (!inv) return;
+  invoiceToEdit = id;
+  document.getElementById('einv-number').value      = inv.number;
+  document.getElementById('einv-supplier').value    = inv.supplier;
+  document.getElementById('einv-description').value = inv.description;
+  document.getElementById('einv-amount').value      = inv.amount;
+  document.getElementById('einv-issue-date').value  = inv.issue_date;
+  document.getElementById('einv-due-date').value    = inv.due_date;
+  document.getElementById('einv-paid-notice').style.display = inv.status === 'paid' ? 'block' : 'none';
+  document.getElementById('edit-invoice-modal').style.display = 'flex';
+}
+
+function closeEditInvoiceModal() {
+  document.getElementById('edit-invoice-modal').style.display = 'none';
+  invoiceToEdit = null;
+}
+
+async function confirmEditInvoice() {
+  const number      = document.getElementById('einv-number').value.trim();
+  const supplier    = document.getElementById('einv-supplier').value.trim();
+  const description = document.getElementById('einv-description').value.trim();
+  const amount      = parseFloat(document.getElementById('einv-amount').value);
+  const issueDate   = document.getElementById('einv-issue-date').value;
+  const dueDate     = document.getElementById('einv-due-date').value;
+  if (!number || !supplier || !description || !amount || !issueDate || !dueDate) {
+    alert('Preencha todos os campos!'); return;
+  }
+  await fetch(`/api/invoices/${invoiceToEdit}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ number, supplier, description, amount, issue_date: issueDate, due_date: dueDate })
+  });
+  closeEditInvoiceModal();
+  loadInvoices();
+  loadTransactions();
+}
+
 // ── INVOICES ──
 async function loadInvoices() {
   const month   = document.getElementById('month-select').value;
@@ -144,6 +231,8 @@ async function loadInvoices() {
   document.getElementById('inv-total').textContent   = fmt(total);
   document.getElementById('inv-pending').textContent = pending;
   document.getElementById('inv-paid').textContent    = paid;
+
+  loadedInvoices = invoices;
 
   const list = document.getElementById('invoice-list');
   if (invoices.length === 0) {
@@ -166,6 +255,7 @@ async function loadInvoices() {
           <span class="valor-tx saida">− ${fmt(inv.amount)}</span>
           ${inv.file_path ? `<button class="btn-icon" onclick="window.open('/api/invoices/${inv.id}/file')" title="Ver PDF">📄</button>` : ''}
           ${inv.status !== 'paid' ? `<button class="btn-icon btn-pagar" onclick="openPayModal(${inv.id}, '${inv.supplier}', ${inv.amount})">✓</button>` : ''}
+          <button class="btn-icon" onclick="openEditInvoiceModal(${inv.id})" title="Editar">✎</button>
           <button class="btn-del" onclick="deleteInvoice(${inv.id})">✕</button>
         </div>
       </div>
