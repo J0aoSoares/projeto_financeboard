@@ -434,9 +434,67 @@ header h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; }
 .placeholder-title { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
 .placeholder-sub   { font-size: 0.85rem; color: var(--muted); }
 
+/* ── DASHBOARD ── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  padding: 24px 40px 0;
+}
+
+.dash-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px 40px 40px;
+}
+
+.dash-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+
+.dash-panel h2 {
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.chart-wrap { position: relative; height: 240px; }
+
+.dash-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 0;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.dash-tx {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.dash-tx:last-child { border-bottom: none; }
+.dash-tx .desc { font-size: 0.88rem; font-weight: 600; }
+.dash-tx .meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 2px;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
-  .resumo { grid-template-columns: 1fr; padding: 20px; }
-  .main   { grid-template-columns: 1fr; padding: 20px; }
-  header  { padding: 16px 20px; }
+  .resumo    { grid-template-columns: 1fr; padding: 20px; }
+  .main      { grid-template-columns: 1fr; padding: 20px; }
+  header     { padding: 16px 20px; }
+  .dash-grid { grid-template-columns: 1fr; padding: 20px; }
+  .dash-row  { grid-template-columns: 1fr; padding: 20px; }
 }

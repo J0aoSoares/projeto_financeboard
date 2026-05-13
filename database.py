@@ -116,6 +116,33 @@ def get_transactions_by_period(from_month=None, to_month=None):
     conn.close()
     return rows
 
+# ── DASHBOARD ──
+
+def last_months_summary(n=6):
+    conn = connect()
+    cursor = conn.execute("""
+        SELECT
+            strftime('%Y-%m', date) AS month,
+            COALESCE(SUM(CASE WHEN kind = 'income'  THEN amount ELSE 0 END), 0) AS total_income,
+            COALESCE(SUM(CASE WHEN kind = 'expense' THEN amount ELSE 0 END), 0) AS total_expenses
+        FROM transactions
+        GROUP BY month
+        ORDER BY month DESC
+        LIMIT ?
+    """, (n,))
+    rows = [dict(r) for r in cursor]
+    conn.close()
+    return list(reversed(rows))
+
+def pending_invoices():
+    conn = connect()
+    cursor = conn.execute(
+        "SELECT * FROM invoices WHERE status != 'paid' ORDER BY due_date ASC"
+    )
+    rows = [dict(r) for r in cursor]
+    conn.close()
+    return rows
+
 # ── INVOICES ──
 
 def insert_invoice(number, supplier, description, amount, issue_date, due_date, file_path=None):

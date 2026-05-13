@@ -6,6 +6,7 @@
   <title>FinanceBoard</title>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -14,7 +15,10 @@
   <nav class="sidebar">
     <div class="sidebar-logo">FBoard</div>
     <ul class="sidebar-menu">
-      <li class="menu-item active" onclick="setScreen('transactions')">
+      <li class="menu-item active" onclick="setScreen('dashboard')">
+        <span class="menu-label">Dashboard</span>
+      </li>
+      <li class="menu-item" onclick="setScreen('transactions')">
         <span class="menu-label">Transações</span>
       </li>
       <li class="menu-item" onclick="setScreen('invoices')">
@@ -38,8 +42,52 @@
       <input type="month" id="month-select">
     </header>
 
+    <!-- DASHBOARD -->
+    <div id="screen-dashboard">
+      <div class="resumo">
+        <div class="card entradas">
+          <label>Entradas do mês</label>
+          <div class="valor" id="dash-income">R$ 0,00</div>
+        </div>
+        <div class="card saidas">
+          <label>Saídas do mês</label>
+          <div class="valor" id="dash-expenses">R$ 0,00</div>
+        </div>
+        <div class="card saldo">
+          <label>Saldo do mês</label>
+          <div class="valor" id="dash-balance">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-panel">
+          <h2>Histórico — últimos 6 meses</h2>
+          <div class="chart-wrap" id="chart-bar-wrap">
+            <canvas id="chart-bar"></canvas>
+          </div>
+        </div>
+        <div class="dash-panel">
+          <h2>Distribuição do mês</h2>
+          <div class="chart-wrap" id="chart-pie-wrap">
+            <canvas id="chart-pie"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div class="dash-panel">
+          <h2>Notas pendentes</h2>
+          <div id="dash-invoices"></div>
+        </div>
+        <div class="dash-panel">
+          <h2>Últimas transações</h2>
+          <div id="dash-transactions"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- TRANSAÇÕES -->
-    <div id="screen-transactions">
+    <div id="screen-transactions" style="display:none">
       <div class="resumo">
         <div class="card entradas">
           <label>Entradas</label>

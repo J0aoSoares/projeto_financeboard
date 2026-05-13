@@ -13,6 +13,17 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def index():
     return render_template('index.html')
 
+@app.route('/api/dashboard', methods=["GET"])
+def dashboard_data():
+    month = request.args.get('month')
+    transactions = database.get_transactions(month)
+    return jsonify({
+        'summary':             database.monthly_summary(month),
+        'history':             database.last_months_summary(6),
+        'pending_invoices':    database.pending_invoices(),
+        'recent_transactions': transactions[:5]
+    })
+
 @app.route('/api/transactions', methods=["GET"])
 def list_transactions():
     month = request.args.get('month')

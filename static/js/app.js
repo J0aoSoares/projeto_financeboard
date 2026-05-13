@@ -5,6 +5,132 @@ let editType = 'income';
 let loadedTransactions = [];
 let invoiceToEdit = null;
 let loadedInvoices = [];
+let barChart = null;
+let pieChart = null;
+
+Chart.defaults.color       = '#5a6a7a';
+Chart.defaults.borderColor = '#1e2a35';
+Chart.defaults.font.family = 'Syne';
+
+async function loadDashboard() {
+  const month = document.getElementById('month-select').value;
+  const data  = await fetch(`/api/dashboard?month=${month}`).then(r => r.json());
+
+  document.getElementById('dash-income').textContent   = fmt(data.summary.total_income);
+  document.getElementById('dash-expenses').textContent = fmt(data.summary.total_expenses);
+  document.getElementById('dash-balance').textContent  = fmt(data.summary.balance);
+
+  renderBarChart(data.history);
+  renderPieChart(data.summary);
+  renderPendingInvoices(data.pending_invoices);
+  renderRecentTransactions(data.recent_transactions);
+}
+
+function renderBarChart(history) {
+  if (barChart) { barChart.destroy(); barChart = null; }
+  const wrap = document.getElementById('chart-bar-wrap');
+  if (!history.length) {
+    wrap.innerHTML = '<div class="dash-empty">Sem histórico de transações</div>';
+    return;
+  }
+  wrap.innerHTML = '<canvas id="chart-bar"></canvas>';
+  barChart = new Chart(document.getElementById('chart-bar'), {
+    type: 'bar',
+    data: {
+      labels: history.map(h => h.month),
+      datasets: [
+        { label: 'Entradas', data: history.map(h => h.total_income),   backgroundColor: 'rgba(0,229,160,0.75)', borderRadius: 4 },
+        { label: 'Saídas',   data: history.map(h => h.total_expenses), backgroundColor: 'rgba(255,77,109,0.75)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e8edf2' } } },
+      scales: {
+        x: { ticks: { color: '#5a6a7a' }, grid: { color: '#1e2a35' } },
+        y: {
+          ticks: { color: '#5a6a7a', callback: v => 'R$ ' + v.toLocaleString('pt-BR') },
+          grid: { color: '#1e2a35' }
+        }
+      }
+    }
+  });
+}
+
+function renderPieChart(summary) {
+  if (pieChart) { pieChart.destroy(); pieChart = null; }
+  const wrap = document.getElementById('chart-pie-wrap');
+  if (!summary.total_income && !summary.total_expenses) {
+    wrap.innerHTML = '<div class="dash-empty">Sem movimentação neste mês</div>';
+    return;
+  }
+  wrap.innerHTML = '<canvas id="chart-pie"></canvas>';
+  pieChart = new Chart(document.getElementById('chart-pie'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Entradas', 'Saídas'],
+      datasets: [{
+        data: [summary.total_income, summary.total_expenses],
+        backgroundColor: ['rgba(0,229,160,0.8)', 'rgba(255,77,109,0.8)'],
+        borderColor:     ['#00e5a0', '#ff4d6d'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#e8edf2', padding: 16 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ' + fmt(ctx.parsed)
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderPendingInvoices(invoices) {
+  const el = document.getElementById('dash-invoices');
+  if (!invoices.length) {
+    el.innerHTML = '<div class="dash-empty">Nenhuma nota pendente</div>';
+    return;
+  }
+  el.innerHTML = invoices.slice(0, 5).map(inv => {
+    const s = invoiceStatus(inv.due_date, inv.status);
+    return `
+      <div class="dash-tx">
+        <div>
+          <div class="desc">${inv.supplier} <span class="tag-nf">${inv.number}</span></div>
+          <div class="meta">vence ${inv.due_date}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="nota-status ${s.cls}" style="font-size:0.6rem">${s.label}</span>
+          <span class="valor-tx saida" style="font-size:0.88rem">− ${fmt(inv.amount)}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderRecentTransactions(transactions) {
+  const el = document.getElementById('dash-transactions');
+  if (!transactions.length) {
+    el.innerHTML = '<div class="dash-empty">Sem transações neste mês</div>';
+    return;
+  }
+  el.innerHTML = transactions.map(t => `
+    <div class="dash-tx">
+      <div>
+        <div class="desc">${t.description}</div>
+        <div class="meta">${t.date}</div>
+      </div>
+      <span class="valor-tx ${t.kind === 'income' ? 'entrada' : 'saida'}" style="font-size:0.88rem">
+        ${t.kind === 'income' ? '+' : '−'} ${fmt(t.amount)}
+      </span>
+    </div>`).join('');
+}
 
 // ── INIT ──
 document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
@@ -18,23 +144,23 @@ document.getElementById('export-to').value     = currentMonth;
 
 document.getElementById('month-select').addEventListener('change', () => {
   const active = document.querySelector('[id^="screen-"]:not([style*="none"])').id.replace('screen-','');
+  if (active === 'dashboard')    loadDashboard();
   if (active === 'transactions') loadTransactions();
   if (active === 'invoices')     loadInvoices();
 });
 
-// ── NAVIGATION ──
 function setScreen(screen) {
-  const screens = ['transactions', 'invoices', 'measurement', 'budget'];
+  const screens = ['dashboard', 'transactions', 'invoices', 'measurement', 'budget'];
   screens.forEach(s => {
     document.getElementById(`screen-${s}`).style.display = s === screen ? '' : 'none';
   });
   document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.menu-item')[screens.indexOf(screen)].classList.add('active');
+  if (screen === 'dashboard')    loadDashboard();
   if (screen === 'transactions') loadTransactions();
   if (screen === 'invoices')     loadInvoices();
 }
 
-// ── UTILS ──
 function fmt(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -49,7 +175,6 @@ function invoiceStatus(dueDate, status) {
   return { cls: 'status-pending', label: 'PENDENTE' };
 }
 
-// ── TRANSACTIONS ──
 function setType(type) {
   selectedType = type;
   document.getElementById('btn-income').className  = 'tipo-btn' + (type === 'income'  ? ' active-entrada' : '');
@@ -118,7 +243,6 @@ async function deleteTransaction(id) {
   loadTransactions();
 }
 
-// ── EDIT MODAL ──
 function setEditType(type) {
   editType = type;
   document.getElementById('edit-btn-income').className  = 'tipo-btn' + (type === 'income'  ? ' active-entrada' : '');
@@ -155,7 +279,6 @@ async function confirmEdit() {
   loadTransactions();
 }
 
-// ── CSV ──
 function exportCSV() {
   const from = document.getElementById('export-from').value;
   const to   = document.getElementById('export-to').value;
@@ -180,7 +303,6 @@ async function importCSV() {
 
 function downloadTemplate() { window.location.href = '/api/template'; }
 
-// ── EDIT INVOICE MODAL ──
 function openEditInvoiceModal(id) {
   const inv = loadedInvoices.find(i => i.id === id);
   if (!inv) return;
@@ -220,7 +342,6 @@ async function confirmEditInvoice() {
   loadTransactions();
 }
 
-// ── INVOICES ──
 async function loadInvoices() {
   const month   = document.getElementById('month-select').value;
   const invoices = await fetch(`/api/invoices?month=${month}`).then(r => r.json());
@@ -300,7 +421,6 @@ async function deleteInvoice(id) {
   loadTransactions();
 }
 
-// ── PAY MODAL ──
 function openPayModal(id, supplier, amount) {
   invoiceToPay = id;
   document.getElementById('modal-desc').textContent = `${supplier} — ${fmt(amount)}`;
@@ -326,4 +446,4 @@ async function confirmPayment() {
   loadTransactions();
 }
 
-loadTransactions();
+setScreen('dashboard');
