@@ -2,7 +2,7 @@
 
 # Financeboard
 
-Dashboard web para controle financeiro empresarial — registre entradas e saídas e acompanhe o saldo mensal em tempo real.
+Dashboard web para controle financeiro empresarial — registre entradas, saídas e notas fiscais, e acompanhe o saldo mensal em tempo real.
 
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.1-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
@@ -15,7 +15,7 @@ Dashboard web para controle financeiro empresarial — registre entradas e saíd
 
 ## Sobre o projeto
 
-Sistema web desenvolvido para controle financeiro de pequenas empresas. Permite registrar transações de entrada e saída, filtrar por mês e visualizar o saldo em tempo real através de uma interface limpa e responsiva.
+Sistema web desenvolvido para controle financeiro de pequenas empresas. Permite registrar e editar transações de entrada e saída, gerenciar notas fiscais com controle de vencimento e pagamento, e visualizar o saldo em tempo real através de uma interface limpa e responsiva.
 
 Projeto construído com foco em aprendizado — cada camada da aplicação (rotas, banco de dados, frontend) foi desenvolvida de forma separada e bem documentada.
 
@@ -23,10 +23,25 @@ Projeto construído com foco em aprendizado — cada camada da aplicação (rota
 
 ## Funcionalidades
 
+**Transações**
 - Registro de entradas e saídas com descrição, valor e data
+- Edição e exclusão de transações
 - Filtro por mês
 - Cards com total de entradas, saídas e saldo calculado
-- Exclusão de transações
+
+**Notas Fiscais**
+- Cadastro com número, fornecedor, descrição, valor, datas de emissão e vencimento
+- Anexo de PDF da nota
+- Status automático: pendente, vence em breve, vencido e pago
+- Pagamento com geração automática de transação vinculada
+- Edição (sincroniza a transação vinculada quando a nota já está paga)
+- Exclusão (remove a transação vinculada automaticamente)
+- Download do PDF anexado
+
+**CSV**
+- Exportação de transações por período
+- Importação em lote via arquivo CSV
+- Download de template para preenchimento
 
 ---
 
@@ -72,8 +87,10 @@ financeboard/
 ├── static/
 │   ├── css/style.css   # Estilos
 │   └── js/app.js       # Lógica do frontend
-└── templates/
-    └── index.html      # Interface
+├── templates/
+│   └── index.html      # Interface
+└── uploads/
+    └── invoices/       # PDFs das notas fiscais anexadas
 ```
 
 ---

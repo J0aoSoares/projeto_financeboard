@@ -91,8 +91,6 @@ def csv_template():
     return Response(output.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": "attachment; filename=template_financeboard.csv"})
 
-# ── INVOICES ──
-
 @app.route('/api/invoices', methods=["GET"])
 def list_invoices():
     month = request.args.get('month')
