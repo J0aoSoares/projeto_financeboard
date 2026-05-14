@@ -12,6 +12,19 @@ Chart.defaults.color       = '#5a6a7a';
 Chart.defaults.borderColor = '#1e2a35';
 Chart.defaults.font.family = 'Syne';
 
+const CAT_COLORS = {
+  'Vendas':       '#00e5a0',
+  'Serviços':     '#4da6ff',
+  'Materiais':    '#ff6b81',
+  'Fornecedores': '#ffa502',
+  'Aluguel':      '#a29bfe',
+  'Salários':     '#fd79a8',
+  'Transporte':   '#26de81',
+  'Utilidades':   '#fd9644',
+  'Impostos':     '#e55039',
+  'Outros':       '#5a6a7a'
+};
+
 async function loadDashboard() {
   const month = document.getElementById('month-select').value;
   const data  = await fetch(`/api/dashboard?month=${month}`).then(r => r.json());
@@ -21,7 +34,7 @@ async function loadDashboard() {
   document.getElementById('dash-balance').textContent  = fmt(data.summary.balance);
 
   renderBarChart(data.history);
-  renderPieChart(data.summary);
+  renderPieChart(data.categories);
   renderPendingInvoices(data.pending_invoices);
   renderRecentTransactions(data.recent_transactions);
 }
@@ -58,22 +71,23 @@ function renderBarChart(history) {
   });
 }
 
-function renderPieChart(summary) {
+function renderPieChart(categories) {
   if (pieChart) { pieChart.destroy(); pieChart = null; }
   const wrap = document.getElementById('chart-pie-wrap');
-  if (!summary.total_income && !summary.total_expenses) {
-    wrap.innerHTML = '<div class="dash-empty">Sem movimentação neste mês</div>';
+  if (!categories.length) {
+    wrap.innerHTML = '<div class="dash-empty">Sem saídas neste mês</div>';
     return;
   }
   wrap.innerHTML = '<canvas id="chart-pie"></canvas>';
+  const colors = categories.map(c => CAT_COLORS[c.category] || '#5a6a7a');
   pieChart = new Chart(document.getElementById('chart-pie'), {
     type: 'doughnut',
     data: {
-      labels: ['Entradas', 'Saídas'],
+      labels: categories.map(c => c.category),
       datasets: [{
-        data: [summary.total_income, summary.total_expenses],
-        backgroundColor: ['rgba(0,229,160,0.8)', 'rgba(255,77,109,0.8)'],
-        borderColor:     ['#00e5a0', '#ff4d6d'],
+        data: categories.map(c => c.total),
+        backgroundColor: colors.map(c => c + 'bb'),
+        borderColor: colors,
         borderWidth: 1
       }]
     },
@@ -81,12 +95,8 @@ function renderPieChart(summary) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#e8edf2', padding: 16 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => ' ' + fmt(ctx.parsed)
-          }
-        }
+        legend: { position: 'bottom', labels: { color: '#e8edf2', padding: 10, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ' ' + fmt(ctx.parsed) } }
       }
     }
   });
@@ -206,7 +216,7 @@ async function loadTransactions() {
         <div class="dot ${t.kind === 'income' ? 'entrada' : 'saida'}"></div>
         <div>
           <div class="desc">${t.description}</div>
-          <div class="meta">${t.date}${t.invoice_id ? ' · <span class="tag-nf">NF</span>' : ''}</div>
+          <div class="meta">${t.date} · <span class="cat-badge">${t.category}</span>${t.invoice_id ? ' · <span class="tag-nf">NF</span>' : ''}</div>
         </div>
       </div>
       <div class="right">
@@ -226,11 +236,12 @@ async function addTransaction() {
   const description = document.getElementById('f-desc').value.trim();
   const amount      = parseFloat(document.getElementById('f-amount').value);
   const date        = document.getElementById('f-date').value;
+  const category    = document.getElementById('f-category').value;
   if (!description || !amount || !date) { alert('Preencha todos os campos!'); return; }
   await fetch('/api/transactions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description, amount, kind: selectedType, date })
+    body: JSON.stringify({ description, amount, kind: selectedType, date, category })
   });
   document.getElementById('f-desc').value   = '';
   document.getElementById('f-amount').value = '';
@@ -253,9 +264,10 @@ function openEditModal(id) {
   const t = loadedTransactions.find(tx => tx.id === id);
   if (!t) return;
   transactionToEdit = id;
-  document.getElementById('edit-desc').value   = t.description;
-  document.getElementById('edit-amount').value  = t.amount;
-  document.getElementById('edit-date').value    = t.date;
+  document.getElementById('edit-desc').value     = t.description;
+  document.getElementById('edit-amount').value    = t.amount;
+  document.getElementById('edit-date').value      = t.date;
+  document.getElementById('edit-category').value  = t.category || 'Outros';
   setEditType(t.kind);
   document.getElementById('edit-modal').style.display = 'flex';
 }
@@ -269,11 +281,12 @@ async function confirmEdit() {
   const description = document.getElementById('edit-desc').value.trim();
   const amount      = parseFloat(document.getElementById('edit-amount').value);
   const date        = document.getElementById('edit-date').value;
+  const category    = document.getElementById('edit-category').value;
   if (!description || !amount || !date) { alert('Preencha todos os campos!'); return; }
   await fetch(`/api/transactions/${transactionToEdit}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description, amount, kind: editType, date })
+    body: JSON.stringify({ description, amount, kind: editType, date, category })
   });
   closeEditModal();
   loadTransactions();

@@ -21,7 +21,8 @@ def dashboard_data():
         'summary':             database.monthly_summary(month),
         'history':             database.last_months_summary(6),
         'pending_invoices':    database.pending_invoices(),
-        'recent_transactions': transactions[:5]
+        'recent_transactions': transactions[:5],
+        'categories':          database.categories_summary(month)
     })
 
 @app.route('/api/transactions', methods=["GET"])
@@ -36,7 +37,8 @@ def add_transaction():
         description=data["description"],
         amount=float(data["amount"]),
         kind=data["kind"],
-        date=data["date"]
+        date=data["date"],
+        category=data.get("category", "Outros")
     )
     return jsonify({"ok": True})
 
@@ -48,7 +50,8 @@ def update_transaction(id):
         description=data["description"],
         amount=float(data["amount"]),
         kind=data["kind"],
-        date=data["date"]
+        date=data["date"],
+        category=data.get("category", "Outros")
     )
     return jsonify({"ok": True})
 
@@ -69,9 +72,9 @@ def export_csv():
     rows = database.get_transactions_by_period(from_month, to_month)
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["description", "amount", "kind", "date"])
+    writer.writerow(["description", "amount", "kind", "date", "category"])
     for r in rows:
-        writer.writerow([r["description"], r["amount"], r["kind"], r["date"]])
+        writer.writerow([r["description"], r["amount"], r["kind"], r["date"], r["category"]])
     filename = f"financeboard_{from_month or 'start'}_{to_month or 'end'}.csv"
     return Response(output.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": f"attachment; filename={filename}"})
@@ -86,7 +89,10 @@ def import_csv():
     inserted, errors = 0, []
     for i, row in enumerate(reader, start=2):
         try:
-            database.insert_transaction(row["description"], float(row["amount"]), row["kind"], row["date"])
+            database.insert_transaction(
+                row["description"], float(row["amount"]), row["kind"], row["date"],
+                category=row.get("category", "Outros")
+            )
             inserted += 1
         except Exception as e:
             errors.append(f"Linha {i}: {str(e)}")
@@ -96,9 +102,9 @@ def import_csv():
 def csv_template():
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["description", "amount", "kind", "date"])
-    writer.writerow(["Exemplo entrada", "1500.00", "income", "2026-05-01"])
-    writer.writerow(["Exemplo saida",   "300.00",  "expense", "2026-05-02"])
+    writer.writerow(["description", "amount", "kind", "date", "category"])
+    writer.writerow(["Exemplo entrada", "1500.00", "income",  "2026-05-01", "Vendas"])
+    writer.writerow(["Exemplo saida",   "300.00",  "expense", "2026-05-02", "Materiais"])
     return Response(output.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": "attachment; filename=template_financeboard.csv"})
 

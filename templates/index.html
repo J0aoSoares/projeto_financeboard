@@ -67,7 +67,7 @@
           </div>
         </div>
         <div class="dash-panel">
-          <h2>Distribuição do mês</h2>
+          <h2>Saídas por categoria</h2>
           <div class="chart-wrap" id="chart-pie-wrap">
             <canvas id="chart-pie"></canvas>
           </div>
@@ -125,6 +125,21 @@
             <div class="form-group">
               <label>Data</label>
               <input type="date" id="f-date">
+            </div>
+            <div class="form-group">
+              <label>Categoria</label>
+              <select id="f-category">
+                <option>Vendas</option>
+                <option>Serviços</option>
+                <option>Materiais</option>
+                <option>Fornecedores</option>
+                <option>Aluguel</option>
+                <option>Salários</option>
+                <option>Transporte</option>
+                <option>Utilidades</option>
+                <option>Impostos</option>
+                <option selected>Outros</option>
+              </select>
             </div>
             <button class="btn-add" onclick="addTransaction()">ADICIONAR</button>
           </div>
@@ -287,6 +302,21 @@
     <div class="form-group">
       <label>Data</label>
       <input type="date" id="edit-date">
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="edit-category">
+        <option>Vendas</option>
+        <option>Serviços</option>
+        <option>Materiais</option>
+        <option>Fornecedores</option>
+        <option>Aluguel</option>
+        <option>Salários</option>
+        <option>Transporte</option>
+        <option>Utilidades</option>
+        <option>Impostos</option>
+        <option>Outros</option>
+      </select>
     </div>
     <div class="modal-actions">
       <button class="btn-csv btn-template" onclick="closeEditModal()">CANCELAR</button>

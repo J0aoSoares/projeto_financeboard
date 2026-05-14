@@ -7,6 +7,16 @@ def connect():
     conn.row_factory = sqlite3.Row
     return conn
 
+def migrate_db():
+    conn = connect()
+    try:
+        conn.execute("ALTER TABLE transactions ADD COLUMN category TEXT NOT NULL DEFAULT 'Outros'")
+        conn.commit()
+        print("Migration: coluna 'category' adicionada.")
+    except Exception:
+        pass
+    conn.close()
+
 def init_db():
     conn = connect()
     conn.execute("""
@@ -16,7 +26,8 @@ def init_db():
             amount      REAL    NOT NULL,
             kind        TEXT    NOT NULL CHECK(kind IN ('income', 'expense')),
             date        TEXT    NOT NULL,
-            invoice_id  INTEGER DEFAULT NULL
+            invoice_id  INTEGER DEFAULT NULL,
+            category    TEXT    NOT NULL DEFAULT 'Outros'
         )
     """)
     conn.execute("""
@@ -35,15 +46,16 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+    migrate_db()
     print("Database initialized.")
 
 # ── TRANSACTIONS ──
 
-def insert_transaction(description, amount, kind, date, invoice_id=None):
+def insert_transaction(description, amount, kind, date, invoice_id=None, category='Outros'):
     conn = connect()
     cursor = conn.execute(
-        "INSERT INTO transactions (description, amount, kind, date, invoice_id) VALUES (?, ?, ?, ?, ?)",
-        (description, amount, kind, date, invoice_id)
+        "INSERT INTO transactions (description, amount, kind, date, invoice_id, category) VALUES (?, ?, ?, ?, ?, ?)",
+        (description, amount, kind, date, invoice_id, category)
     )
     new_id = cursor.lastrowid
     conn.commit()
@@ -63,11 +75,11 @@ def get_transactions(month=None):
     conn.close()
     return rows
 
-def update_transaction(id, description, amount, kind, date):
+def update_transaction(id, description, amount, kind, date, category='Outros'):
     conn = connect()
     conn.execute(
-        "UPDATE transactions SET description=?, amount=?, kind=?, date=? WHERE id=?",
-        (description, amount, kind, date, id)
+        "UPDATE transactions SET description=?, amount=?, kind=?, date=?, category=? WHERE id=?",
+        (description, amount, kind, date, category, id)
     )
     conn.commit()
     conn.close()
@@ -112,6 +124,22 @@ def get_transactions_by_period(from_month=None, to_month=None):
         )
     else:
         cursor = conn.execute("SELECT * FROM transactions ORDER BY date ASC")
+    rows = [dict(r) for r in cursor]
+    conn.close()
+    return rows
+
+# ── CATEGORIES ──
+
+def categories_summary(month=None):
+    conn = connect()
+    filter_ = (f"{month}-%",) if month else ("%",)
+    cursor = conn.execute("""
+        SELECT category, SUM(amount) AS total
+        FROM transactions
+        WHERE kind = 'expense' AND date LIKE ?
+        GROUP BY category
+        ORDER BY total DESC
+    """, filter_)
     rows = [dict(r) for r in cursor]
     conn.close()
     return rows
@@ -185,7 +213,8 @@ def mark_invoice_paid(id, payment_date):
         amount=invoice["amount"],
         kind="expense",
         date=payment_date,
-        invoice_id=id
+        invoice_id=id,
+        category='Fornecedores'
     )
     conn = connect()
     conn.execute(
